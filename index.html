@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0d0d10">
+    <title>SON AR</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/son.css">
+    <script src="js/lib/aframe.min.js"></script>
+    <script src="js/lib/aframe-ar.js"></script>
+    <script>
+      window.SON_BUILD = {
+        loaderUrl: "Build/WebGL.loader.js",
+        dataUrl: "Build/WebGL.data",
+        frameworkUrl: "Build/WebGL.framework.js",
+        codeUrl: "Build/WebGL.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "SON",
+        productName: "SON AR",
+        productVersion: "0.1"
+      };
+    </script>
+  </head>
+
+  <body>
+    <!-- Unity renders here, on top of the camera video (transparent background) -->
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+
+    <!-- AR.js scene, injected by app.js unless ?preview is set -->
+    <template id="ar-scene">
+      <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono;" vr-mode-ui="enabled: false" renderer="alpha: true" copycanvas>
+			<a-marker type="pattern" url="data/markers/Hiro.patt" markercontroller="name : Hiro"></a-marker>
+			<a-marker type="pattern" url="data/markers/Nutty.patt" markercontroller="name : Nutty"></a-marker>
+			<a-marker type="pattern" url="data/markers/NuttyCardboard.patt" markercontroller="name : NuttyCardboard"></a-marker>
+			<a-marker type="pattern" url="data/markers/son.patt" markercontroller="name : son"></a-marker>
+
+        <a-entity camera cameratransform></a-entity>
+      </a-scene>
+    </template>
+
+    <!-- ===== SON UI ===== -->
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">S</span><span class="brand-text">SON<em>·AR</em></span></div>
+      <div id="status" class="status status--search"><i></i><span>마커를 찾는 중</span></div>
+    </header>
+
+    <section id="loader" class="loader">
+      <div class="loader-logo">SON<em>·AR</em></div>
+      <div class="loader-bar"><div id="loader-fill"></div></div>
+      <p id="loader-text">불러오는 중 0%</p>
+    </section>
+
+    <section id="hint" class="hint">
+      <img src="marker/son-marker.png" alt="SON 마커">
+      <div>
+        <strong>SON 마커를 비춰주세요</strong>
+        <p>인쇄하거나 다른 화면에 띄운 마커를 카메라에 담으면 캐릭터가 나타나요.</p>
+        <div class="hint-actions">
+          <a class="chip" href="marker/son-marker.png" target="_blank" rel="noopener">마커 열기</a>
+          <a class="chip" href="?preview">마커 없이 보기</a>
+        </div>
+      </div>
+    </section>
+
+    <nav id="dock" class="dock" aria-label="캐릭터 조작">
+      <button data-call="ToggleDance" id="btn-dance"><span>⏸</span>멈춤</button>
+      <button data-call="Spin"><span>↻</span>회전</button>
+      <button data-call="Jump"><span>⤒</span>점프</button>
+      <button data-call="NextColor"><span id="swatch" class="swatch"></span>색상</button>
+      <button data-call="ScaleDown"><span>−</span>작게</button>
+      <button data-call="ScaleUp"><span>+</span>크게</button>
+    </nav>
+    <p id="gesture" class="gesture">한 손가락: 돌리기 · 두 손가락: 크기</p>
+
+    <div id="toast" class="toast" role="status"></div>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>
