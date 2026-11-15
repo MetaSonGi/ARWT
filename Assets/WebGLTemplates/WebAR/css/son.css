@@ -74,3 +74,17 @@ video{z-index:0!important}
   padding:8px 14px;border-radius:999px;background:var(--son-accent);color:#111;font-size:13px;font-weight:600;
   transition:opacity .25s,transform .25s;pointer-events:none}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* camera error */
+.status--error i{background:#ff4d4d;animation:none;box-shadow:none}
+.camera-error{position:fixed;z-index:15;left:50%;top:50%;transform:translate(-50%,-46%);opacity:0;pointer-events:none;
+  width:min(360px,calc(100vw - 32px));padding:24px 20px;border-radius:22px;text-align:center;
+  background:var(--son-glass);border:1px solid var(--son-line);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  transition:opacity .3s,transform .3s}
+.camera-error.show{opacity:1;transform:translate(-50%,-50%);pointer-events:auto}
+.camera-error-icon{font-size:34px;margin-bottom:8px}
+.camera-error strong{font-size:17px}
+.camera-error p{margin:8px 0 16px;font-size:13.5px;line-height:1.55;color:var(--son-dim)}
+.camera-error .hint-actions{justify-content:center}
+.chip{font-family:inherit;cursor:pointer}
+.chip--accent{background:var(--son-accent);border-color:var(--son-accent);color:#111;font-weight:600}

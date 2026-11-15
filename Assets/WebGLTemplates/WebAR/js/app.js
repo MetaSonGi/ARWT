@@ -132,9 +132,46 @@
       requestAnimationFrame(previewLoop);
       return;
     }
-    const tpl = $("ar-scene");
-    document.body.insertBefore(tpl.content.cloneNode(true), tpl);
+    checkCamera().then((ok) => {
+      if (!ok) return;
+      const tpl = $("ar-scene");
+      document.body.insertBefore(tpl.content.cloneNode(true), tpl);
+    });
   }
+
+  // Ask for the camera ourselves first so we can explain failures instead of AR.js's bare alert().
+  const CAMERA_ERRORS = {
+    NotAllowedError: ["카메라 권한이 막혀 있어요", "주소창의 🔒(사이트 설정)에서 카메라를 '허용'으로 바꾼 뒤 다시 시도하세요."],
+    SecurityError: ["카메라 권한이 막혀 있어요", "주소창의 🔒(사이트 설정)에서 카메라를 '허용'으로 바꾼 뒤 다시 시도하세요."],
+    NotReadableError: ["다른 앱이 카메라를 쓰고 있어요", "Zoom·Teams·카메라 앱 등을 닫고 다시 시도하세요."],
+    NotFoundError: ["카메라를 찾을 수 없어요", "웹캠이 연결돼 있는지 확인하세요. 카메라가 없으면 '마커 없이 보기'로 볼 수 있어요."],
+    OverconstrainedError: ["카메라 설정을 맞출 수 없어요", "다른 카메라나 브라우저로 시도해 보세요."],
+    NoMediaDevices: ["이 브라우저는 카메라를 열 수 없어요", "카카오톡·인스타 같은 앱 안 브라우저나 미리보기 창이면, Chrome이나 Safari로 이 주소를 직접 열어주세요."]
+  };
+
+  async function checkCamera() {
+    let name = "NoMediaDevices";
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        stream.getTracks().forEach((t) => t.stop());
+        $("camera-error").classList.remove("show");
+        return true;
+      } catch (e) {
+        name = e && e.name in CAMERA_ERRORS ? e.name : "NotAllowedError";
+        console.warn("camera:", e);
+      }
+    }
+    const [title, body] = CAMERA_ERRORS[name];
+    $("camera-error-title").textContent = title;
+    $("camera-error-body").textContent = body;
+    $("camera-error").classList.add("show");
+    $("hint").classList.add("hidden");
+    setStatus("error", "카메라 꺼짐");
+    return false;
+  }
+
+  $("camera-retry").addEventListener("click", () => startAR());
 
   function loadUnity() {
     const cfg = Object.assign({}, window.SON_BUILD, {
