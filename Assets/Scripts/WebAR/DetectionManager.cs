@@ -1,4 +1,4 @@
-﻿using ARWT.Core;
+using ARWT.Core;
 using UnityEngine;
 
 namespace ARWT.Marker{
@@ -24,10 +24,8 @@ namespace ARWT.Marker{
         public static event MarkerDetection onMarkerDetected;
         public static event MarkerDetection onMarkerVisible;
         public static event MarkerDetection onMarkerLost;
-        
-        [System.Obsolete]
         void Start() {
-            Application.ExternalCall("detectionManagerReady");
+            WebBridge.Call("detectionManagerReady");
         }
 
         public void markerInfos(string infos){

@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 #if UNITY_EDITOR
 using UnityEditor;
@@ -11,33 +11,22 @@ namespace ARWT.Core{
         #if UNITY_EDITOR
 
         const string markerPlaceholder = "--MARKERS--";
-        const string buildPlaceholder = "%UNITY_WEBGL_BUILD_URL%";
         static string projectMarkers = "Assets/Resources/Markers";
         static string projectMarkersImages = "Assets/Resources/Images";
         static string markersPath = "data/markers";
         static string markersImagesPath = "data/markersImages";
         static string index = "index.html";
-        static string appJS = "js/app.js";
 
         
 
         [PostProcessBuild]
         public static void OnPostProcessBuild(BuildTarget target, string targetPath){
+            if(target != BuildTarget.WebGL) return;
             if(PlayerSettings.WebGL.template.Contains("WebAR")){
-                var path = Path.Combine(targetPath, "Build/UnityLoader.js");
-                var text = File.ReadAllText(path);
-                text = text.Replace("UnityLoader.SystemInfo.mobile", "false");
-                File.WriteAllText(path, text);
-
-                string buildJsonPath = "Build/" + getName(targetPath) + ".json";
-                path = Path.Combine(targetPath, "Build/" + getName(targetPath) + ".json");
-                replaceInFile(path, "backgroundColor", "");
-
+                // Unity 2020+ loader is wired in index.html via template variables;
+                // here we only inject the AR.js <a-marker> tags and marker images.
                 generateHTML(targetPath);
                 copyImages(targetPath);
-
-                string unityDeclaration = $"const unityInstance = UnityLoader.instantiate(\"unityContainer\", \"{buildJsonPath}\");";
-                replaceInFile(Path.Combine(targetPath, appJS), buildPlaceholder, unityDeclaration);
             }
         }
 
@@ -66,7 +55,7 @@ namespace ARWT.Core{
                 if(file.Extension == ".patt"){
                     FileUtil.CopyFileOrDirectory(file.FullName, Path.Combine(completeMarkersPath, file.Name));
                     var markerName = file.Name.Replace(file.Extension, "");
-                    var markerUrl = Path.Combine(markersPath, file.Name);
+                    var markerUrl = markersPath + "/" + file.Name;
                     html += $"\t\t\t<a-marker type=\"pattern\" url=\"{markerUrl}\" markercontroller=\"name : {markerName}\"></a-marker>\n";
                 }
             }

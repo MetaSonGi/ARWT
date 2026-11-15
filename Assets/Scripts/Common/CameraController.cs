@@ -1,15 +1,13 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace ARWT.Core{
     public class CameraController : MonoBehaviour{
         
         Matrix4x4 defProj;
         Camera cam;
-
-        [System.Obsolete]
         void Start() {
             cam = GetComponent<Camera>();
-            Application.ExternalCall("cameraReady");
+            WebBridge.Call("cameraReady");
             
             defProj = cam.projectionMatrix;
         }
