@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SON AR · 마커 시트</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--accent:#ff5c35}
+    *{box-sizing:border-box}
+    body{margin:0;background:#f5f3ef;color:#141317;font-family:"Noto Sans KR",system-ui,sans-serif}
+    header{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;max-width:1000px;margin:0 auto;padding:32px 16px 8px}
+    h1{margin:0;font-family:"Space Grotesk",sans-serif;font-size:28px}
+    h1 em{font-style:normal;color:var(--accent)}
+    header p{margin:6px 0 0;color:#5f5c58;font-size:14px}
+    button{font:inherit;font-weight:600;padding:10px 18px;border-radius:999px;border:0;background:var(--accent);color:#111;cursor:pointer}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:1000px;margin:0 auto;padding:16px}
+    figure{margin:0;padding:14px;border-radius:18px;background:#fff;border:1px solid #e4e0da;break-inside:avoid}
+    figure img{width:100%;display:block}
+    figcaption{display:flex;align-items:baseline;gap:8px;margin-top:8px;font-size:14px}
+    figcaption b{font-family:"Space Grotesk",sans-serif;color:var(--accent);font-size:18px}
+    figcaption span{color:#5f5c58}
+    @media print{header button{display:none}body{background:#fff}.grid{grid-template-columns:1fr 1fr}figure{border:0}}
+  </style>
+</head>
+<body>
+  <header>
+    <div><h1>SON<em>·AR</em> 마커 시트</h1><p>인쇄하거나 다른 화면에 띄워서 카메라로 비춰주세요. 한 장의 가로가 10cm 이상이면 잘 인식돼요.</p></div>
+    <button onclick="print()">인쇄하기</button>
+  </header>
+  <section class="grid">
+    <figure><img src="marker/son1.png" alt="SON 1"><figcaption><b>1</b>댄스 <span>— 신나게 춤춰요</span></figcaption></figure>
+    <figure><img src="marker/son2.png" alt="SON 2"><figcaption><b>2</b>스핀 <span>— 춤추며 빙글빙글</span></figcaption></figure>
+    <figure><img src="marker/son3.png" alt="SON 3"><figcaption><b>3</b>점프 <span>— 리듬에 맞춰 점프</span></figcaption></figure>
+    <figure><img src="marker/son4.png" alt="SON 4"><figcaption><b>4</b>거인 <span>— 커다랗게, 느릿느릿</span></figcaption></figure>
+  </section>
+</body>
+</html>

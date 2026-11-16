@@ -8,7 +8,13 @@ namespace SON{
     /// unityInstance.SendMessage("SonCharacter", "&lt;Method&gt;").
     /// One-finger drag rotates, two-finger pinch scales (touch or mouse drag / wheel).
     /// </summary>
+    public enum SonMode{ Dance, Spin, Jump, Giant }
+
     public class SonCharacter : MonoBehaviour{
+        [Tooltip("Marker id this character belongs to, e.g. son1")]
+        public string id = "son1";
+        public SonMode mode = SonMode.Dance;
+        public Color startColor = Color.white;
         public Animator animator;
         public Transform model;          // the visual that gets spun / hopped / scaled
         public float baseScale = 0.6f;
@@ -25,7 +31,8 @@ namespace SON{
         };
 
         float scaleFactor = 1f;
-        int colorIndex;
+        float jumpTimer;
+        int colorIndex = -1;
         bool dancing = true;
         bool busy;
         float pinchStart;
@@ -36,18 +43,28 @@ namespace SON{
         void Awake(){
             renderers = GetComponentsInChildren<Renderer>(true);
             block = new MaterialPropertyBlock();
+            if(mode == SonMode.Giant) scaleFactor = 1.7f;
+            if(animator && mode == SonMode.Giant) animator.speed = 0.5f;
+            Tint(startColor);
             ApplyScale();
         }
 
         void Start(){
-            WebBridge.Call("sonEvent", "ready");
+            WebBridge.Call("sonEvent", "ready::" + id);
         }
+
+        /// <summary>Character that receives drag / pinch. Set by the page (Select) or on first sighting.</summary>
+        public static SonCharacter selected;
+        public void Select(){ selected = this; WebBridge.Call("sonEvent", "selected::" + id); }
+        bool Controllable => selected == null || selected == this;
+
+        float DanceSpeed => mode == SonMode.Giant ? 0.5f : 1f;
 
         // ---------- page buttons ----------
         public void ToggleDance(){
             dancing = !dancing;
-            if(animator) animator.speed = dancing ? 1f : 0f;
-            WebBridge.Call("sonEvent", dancing ? "dance:on" : "dance:off");
+            if(animator) animator.speed = dancing ? DanceSpeed : 0f;
+            WebBridge.Call("sonEvent", (dancing ? "dance:on:" : "dance:off:") + id);
         }
 
         public void Spin(){ if(!busy) StartCoroutine(SpinRoutine()); }
@@ -58,13 +75,17 @@ namespace SON{
         public void NextColor(){
             colorIndex = (colorIndex + 1) % Palette.Length;
             Color c = Palette[colorIndex];
+            Tint(c);
+            WebBridge.Call("sonEvent", "color:" + ColorUtility.ToHtmlStringRGB(c) + ":" + id);
+        }
+
+        void Tint(Color c){
             foreach(var r in renderers){
                 r.GetPropertyBlock(block);
                 block.SetColor("_Color", c);
                 block.SetColor("_BaseColor", c);
                 r.SetPropertyBlock(block);
             }
-            WebBridge.Call("sonEvent", "color:#" + ColorUtility.ToHtmlStringRGB(c));
         }
 
         public void ResetPose(){
@@ -73,8 +94,14 @@ namespace SON{
             model.localRotation = Quaternion.identity;
         }
 
-        // ---------- touch / mouse ----------
+        // ---------- per-marker behavior + touch / mouse ----------
         void Update(){
+            if(dancing && !busy){
+                if(mode == SonMode.Spin) model.Rotate(0f, 120f * Time.deltaTime, 0f, Space.Self);
+                if(mode == SonMode.Jump && (jumpTimer += Time.deltaTime) > 1.3f){ jumpTimer = 0f; Jump(); }
+            }
+
+            if(!Controllable) return;
             if(Input.touchCount == 1){
                 var t = Input.GetTouch(0);
                 if(t.phase == TouchPhase.Moved) model.Rotate(0f, -t.deltaPosition.x * dragDegreesPerPixel, 0f, Space.Self);

@@ -5,14 +5,33 @@
 (function () {
   "use strict";
 
-  const PREVIEW = new URLSearchParams(location.search).has("preview");
-  // Marker pose used by ?preview (Unity coords: camera at origin looking +Z)
-  const PREVIEW_POSE = "son,true,0,-0.5,2.4,0,0.9962,-0.0872,0,1,1,1";
+  // ---------- examples ----------
+  const MARKERS = {
+    son1: { no: "1", name: "댄스", desc: "신나게 춤춰요" },
+    son2: { no: "2", name: "스핀", desc: "춤추며 빙글빙글 돌아요" },
+    son3: { no: "3", name: "점프", desc: "리듬에 맞춰 점프해요" },
+    son4: { no: "4", name: "거인", desc: "커다랗게, 느릿느릿 춤춰요" }
+  };
+  const EXAMPLES = {
+    dancer: { markers: ["son1"], title: "SON 1번 마커를 비춰주세요", body: "마커 위에 댄서가 나타나요. 버튼과 손가락으로 조작해 보세요." },
+    multi: { markers: ["son1", "son2", "son3", "son4"], title: "SON 마커 1~4번을 비춰주세요", body: "마커마다 다른 동작을 해요. 여러 개를 함께 비춰도 돼요." },
+    preview: { markers: ["son1", "son2", "son3", "son4"], preview: true }
+  };
+  const params = new URLSearchParams(location.search);
+  const EX_ID = params.has("preview") ? "preview" : params.get("ex");
+  const EX = EXAMPLES[EX_ID] || null;
+  const PREVIEW = !!(EX && EX.preview);
+
+  // Preview poses (Unity coords: camera at origin looking +Z, characters face the camera)
+  const PREVIEW_X = { son1: -1.65, son2: -0.55, son3: 0.55, son4: 1.65 };
+  const previewPose = (id) => `${id},true,${PREVIEW_X[id]},-0.75,4.2,0,0.9962,-0.0872,0,1,1,1`;
 
   let unityInstance = null;
   let isCameraReady = false;
   let isDetectionManagerReady = false;
-  let dancing = true;
+  const found = new Set();
+  let active = EX ? EX.markers[0] : "son1";
+  const danceState = {};
 
   const $ = (id) => document.getElementById(id);
   const unityCanvas = $("unity-canvas");
@@ -22,21 +41,31 @@
     if (arg === undefined) unityInstance.SendMessage(obj, method);
     else unityInstance.SendMessage(obj, method, arg);
   }
+  const charObj = (id) => "SonCharacter_" + id;
 
   // ---------- Unity -> page ----------
   window.cameraReady = () => { isCameraReady = true; };
   window.detectionManagerReady = () => { isDetectionManagerReady = true; };
   window.sonEvent = (msg) => {
-    const [type, value] = msg.split(":");
+    const [type, value, id] = msg.split(":");
     switch (type) {
-      case "found": setStatus(PREVIEW ? "preview" : "found", PREVIEW ? "미리보기" : "SON 감지됨"); showControls(true); break;
-      case "lost": if (!PREVIEW) { setStatus("search", "마커를 찾는 중"); showControls(false); } break;
-      case "dance":
-        dancing = value === "on";
-        $("btn-dance").innerHTML = dancing ? "<span>⏸</span>멈춤" : "<span>▶</span>춤";
-        toast(dancing ? "다시 춤춰요" : "잠깐 멈춤");
+      case "found":
+        found.add(value);
+        if (!found.has(active)) select(value);
+        if (!PREVIEW && found.size === 1) toast(`${MARKERS[value].no}번 · ${MARKERS[value].name}`);
+        refreshFound();
         break;
-      case "color": $("swatch").style.setProperty("background", "#" + msg.split("#")[1], "important"); break;
+      case "lost":
+        found.delete(value);
+        if (active === value && found.size) select([...found][0]);
+        refreshFound();
+        break;
+      case "dance":
+        danceState[id] = value === "on";
+        if (id === active) refreshDanceButton();
+        toast(value === "on" ? "다시 춤춰요" : "잠깐 멈춤");
+        break;
+      case "color": if (id === active) $("swatch").style.setProperty("background", "#" + value, "important"); break;
     }
   };
 
@@ -45,6 +74,41 @@
     const el = $("status");
     el.className = "status status--" + kind;
     el.querySelector("span").textContent = text;
+  }
+
+  function select(id) {
+    active = id;
+    send(charObj(id), "Select");
+    refreshDanceButton();
+    refreshFound();
+  }
+
+  function refreshDanceButton() {
+    const on = danceState[active] !== false;
+    $("btn-dance").innerHTML = on ? "<span>⏸</span>멈춤" : "<span>▶</span>춤";
+  }
+
+  function refreshFound() {
+    const n = found.size;
+    if (PREVIEW) setStatus("preview", "미리보기");
+    else if (n) setStatus("found", n === 1 ? `${MARKERS[[...found][0]].no}번 감지됨` : `마커 ${n}개 감지됨`);
+    else setStatus("search", "마커를 찾는 중");
+
+    const multi = EX && EX.markers.length > 1;
+    const bar = $("found");
+    bar.innerHTML = "";
+    if (multi) {
+      EX.markers.filter((m) => found.has(m)).forEach((m) => {
+        const b = document.createElement("button");
+        b.className = "found-chip" + (m === active ? " active" : "");
+        b.innerHTML = `<b>${MARKERS[m].no}</b>${MARKERS[m].name}`;
+        b.title = MARKERS[m].desc;
+        b.addEventListener("click", () => select(m));
+        bar.appendChild(b);
+      });
+    }
+    bar.classList.toggle("show", multi && n > 0);
+    showControls(n > 0);
   }
 
   function showControls(on) {
@@ -64,7 +128,7 @@
 
   document.querySelectorAll("#dock button").forEach((b) => {
     b.addEventListener("click", () => {
-      send("SonCharacter", b.dataset.call);
+      send(charObj(active), b.dataset.call);
       if (navigator.vibrate) navigator.vibrate(12);
     });
   });
@@ -119,7 +183,7 @@
       send("Main Camera", "setPosition", "0,0,0");
       send("Main Camera", "setRotation", "0,0,0,1");
     }
-    if (isDetectionManagerReady) send("DetectionManager", "markerInfos", PREVIEW_POSE);
+    if (isDetectionManagerReady) EX.markers.forEach((m) => send("DetectionManager", "markerInfos", previewPose(m)));
     requestAnimationFrame(previewLoop);
   }
 
@@ -135,7 +199,12 @@
     checkCamera().then((ok) => {
       if (!ok) return;
       const tpl = $("ar-scene");
-      document.body.insertBefore(tpl.content.cloneNode(true), tpl);
+      const frag = tpl.content.cloneNode(true);
+      frag.querySelectorAll("a-marker").forEach((m) => {
+        const name = (m.getAttribute("markercontroller") || "").split(":").pop().trim();
+        if (!EX.markers.includes(name)) m.remove();
+      });
+      document.body.insertBefore(frag, tpl);
     });
   }
 
@@ -197,5 +266,17 @@
     document.body.appendChild(script);
   }
 
-  loadUnity();
+  if (!EX) {
+    // gallery: nothing heavy is loaded until an example is chosen
+    document.body.classList.add("is-home");
+    $("loader").classList.add("done");
+  } else {
+    document.body.classList.add("ex-" + EX_ID);
+    if (!PREVIEW) {
+      $("hint-title").textContent = EX.title;
+      $("hint-body").textContent = EX.body;
+      $("hint-img").src = "marker/" + EX.markers[0] + ".png";
+    }
+    loadUnity();
+  }
 })();

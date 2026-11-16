@@ -1,9 +1,12 @@
-"""Generate the SON AR.js pattern marker (.patt) and a printable marker image.
+"""Generate the SON AR.js pattern markers (.patt) and printable marker images.
 
 Usage: python Tools/make_marker.py
-Writes:
-  Assets/Resources/Markers/son.patt      (AR.js pattern, picked up by PostBuildActions)
-  Assets/WebGLTemplates/WebAR/marker/son-marker.png  (printable / show on another screen)
+Writes, for each marker in MARKERS:
+  Assets/Resources/Markers/<id>.patt                 (AR.js pattern, picked up by PostBuildActions)
+  Assets/WebGLTemplates/WebAR/marker/<id>.png        (print it / show it on another screen)
+
+The 4x4 grids were picked by a search so that no marker (in any rotation) correlates with
+another above ~0.17; AR.js then never mistakes one SON marker for another.
 """
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
@@ -12,28 +15,37 @@ ROOT = Path(__file__).resolve().parent.parent
 FONT = ROOT / "Assets/Fonts/Roboto-Bold.ttf"
 INNER = 512          # inner pattern size (px)
 RATIO = 0.5          # AR.js default patternRatio: inner = 50% of full marker
-ACCENT = (0, 0, 0)  # keep high contrast for reliable detection
+
+# id, label printed above the marker, 4x4 grid (1 = black)
+MARKERS = [
+    ("son1", "SON 1  DANCE", [[0, 0, 1, 0], [1, 1, 1, 1], [0, 0, 1, 0], [0, 0, 0, 1]]),
+    ("son2", "SON 2  SPIN",  [[0, 0, 0, 1], [1, 0, 1, 0], [1, 0, 1, 0], [1, 1, 1, 1]]),
+    ("son3", "SON 3  JUMP",  [[0, 1, 0, 1], [0, 1, 0, 1], [1, 0, 1, 0], [0, 1, 0, 1]]),
+    ("son4", "SON 4  GIANT", [[0, 0, 0, 1], [1, 0, 0, 1], [0, 0, 1, 1], [0, 0, 1, 0]]),
+]
 
 
-def inner_image():
+def inner_image(grid):
     img = Image.new("RGB", (INNER, INNER), "white")
     d = ImageDraw.Draw(img)
-    # asymmetric layout so all 4 rotations are distinguishable
-    d.rectangle([48, 48, 48 + INNER // 4, 48 + INNER // 4], fill=ACCENT)
-    font = ImageFont.truetype(str(FONT), 200)
-    d.text((INNER // 2, INNER * 0.62), "SON", font=font, fill="black", anchor="mm")
-    d.rectangle([INNER * 0.55, INNER * 0.86, INNER * 0.95, INNER * 0.94], fill="black")
+    cell = INNER // 4
+    for y, row in enumerate(grid):
+        for x, v in enumerate(row):
+            if v:
+                d.rectangle([x * cell, y * cell, (x + 1) * cell - 1, (y + 1) * cell - 1], fill="black")
     return img
 
 
-def full_marker(inner):
+def full_marker(inner, label):
     full = int(INNER / RATIO)
     border = (full - INNER) // 2
     img = Image.new("RGB", (full, full), "black")
     img.paste(inner, (border, border))
-    margin = full // 10
+    margin = full // 8
     out = Image.new("RGB", (full + 2 * margin, full + 2 * margin), "white")
     out.paste(img, (margin, margin))
+    d = ImageDraw.Draw(out)
+    d.text((out.width // 2, margin // 2), label, font=ImageFont.truetype(str(FONT), margin // 2), fill="black", anchor="mm")
     return out
 
 
@@ -53,13 +65,13 @@ def patt(inner):
 
 
 def main():
-    inner = inner_image()
-    patt_path = ROOT / "Assets/Resources/Markers/son.patt"
-    patt_path.write_text(patt(inner), newline="\n")
     png_dir = ROOT / "Assets/WebGLTemplates/WebAR/marker"
     png_dir.mkdir(parents=True, exist_ok=True)
-    full_marker(inner).save(png_dir / "son-marker.png")
-    print("wrote", patt_path, "and", png_dir / "son-marker.png")
+    for mid, label, grid in MARKERS:
+        inner = inner_image(grid)
+        (ROOT / f"Assets/Resources/Markers/{mid}.patt").write_text(patt(inner), newline="\n")
+        full_marker(inner, label).save(png_dir / f"{mid}.png")
+        print("wrote", mid)
 
 
 if __name__ == "__main__":

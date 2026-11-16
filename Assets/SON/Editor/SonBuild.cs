@@ -36,20 +36,47 @@ namespace SON.EditorTools{
             if(generic.gameUI) generic.gameUI.SetActive(false);
             Object.DestroyImmediate(generic);
 
-            var content = new GameObject("SonContent");
-            content.transform.SetParent(root.transform, false);
+            root.SetActive(false);   // the demo's marker root is replaced by one root per SON marker
 
+            foreach(var cfg in Markers){
+                var markerRoot = new GameObject("SonMarker_" + cfg.id);
+                var content = new GameObject("SonContent");
+                content.transform.SetParent(markerRoot.transform, false);
+                BuildCharacter(content.transform, cfg);
+                var follower = markerRoot.AddComponent<SonMarkerController>();
+                follower.markers = new System.Collections.Generic.List<string>{ cfg.id };
+                follower.content = content;
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log($"[SON] Scene created at {ScenePath} with {Markers.Length} marker characters");
+        }
+
+        struct MarkerConfig{
+            public string id; public SonMode mode; public Color color;
+            public MarkerConfig(string id, SonMode mode, Color color){ this.id = id; this.mode = mode; this.color = color; }
+        }
+
+        static readonly MarkerConfig[] Markers = {
+            new MarkerConfig("son1", SonMode.Dance, new Color(1f, 0.45f, 0.3f)),
+            new MarkerConfig("son2", SonMode.Spin,  new Color(0.4f, 0.65f, 1f)),
+            new MarkerConfig("son3", SonMode.Jump,  new Color(0.5f, 1f, 0.55f)),
+            new MarkerConfig("son4", SonMode.Giant, new Color(0.8f, 0.5f, 1f)),
+        };
+
+        static void BuildCharacter(Transform content, MarkerConfig cfg){
             var shadow = GameObject.CreatePrimitive(PrimitiveType.Quad);
             shadow.name = "SonShadow";
             Object.DestroyImmediate(shadow.GetComponent<Collider>());
-            shadow.transform.SetParent(content.transform, false);
+            shadow.transform.SetParent(content, false);
             shadow.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             shadow.transform.localScale = Vector3.one * 3f;
             var shadowMat = AssetDatabase.LoadAssetAtPath<Material>(ShadowMaterial);
             if(shadowMat) shadow.GetComponent<Renderer>().sharedMaterial = shadowMat;
 
-            var character = new GameObject("SonCharacter");       // name is the SendMessage target
-            character.transform.SetParent(content.transform, false);
+            var character = new GameObject("SonCharacter_" + cfg.id);   // SendMessage target
+            character.transform.SetParent(content, false);
             var model = new GameObject("Model");
             model.transform.SetParent(character.transform, false);
 
@@ -72,18 +99,13 @@ namespace SON.EditorTools{
             }
 
             var son = character.AddComponent<SonCharacter>();
+            son.id = cfg.id;
+            son.mode = cfg.mode;
+            son.startColor = cfg.color;
             son.animator = animator;
             son.model = model.transform;
             son.baseScale = TargetHeight / height;
             model.transform.localScale = Vector3.one * son.baseScale;
-
-            var follower = root.AddComponent<SonMarkerController>();
-            follower.content = content;
-            root.name = "SonMarker";
-
-            EditorSceneManager.MarkSceneDirty(scene);
-            EditorSceneManager.SaveScene(scene);
-            Debug.Log($"[SON] Scene created at {ScenePath} (character height {height:F2}, baseScale {son.baseScale:F3})");
         }
 
         [MenuItem("SON/Build WebGL")]

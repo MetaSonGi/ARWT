@@ -29,7 +29,7 @@
     <!-- Unity renders here, on top of the camera video (transparent background) -->
     <canvas id="unity-canvas" tabindex="-1"></canvas>
 
-    <!-- AR.js scene, injected by app.js unless ?preview is set -->
+    <!-- AR.js scene, injected by app.js for camera examples (markers filtered per example) -->
     <template id="ar-scene">
       <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono;" vr-mode-ui="enabled: false" renderer="alpha: true" copycanvas>
         --MARKERS--
@@ -39,9 +39,31 @@
 
     <!-- ===== SON UI ===== -->
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">S</span><span class="brand-text">SON<em>·AR</em></span></div>
+      <a class="brand" href="./"><span class="brand-mark">S</span><span class="brand-text">SON<em>·AR</em></span></a>
       <div id="status" class="status status--search"><i></i><span>마커를 찾는 중</span></div>
     </header>
+
+    <!-- example gallery (shown when no ?ex= is given) -->
+    <main id="home" class="home">
+      <p class="eyebrow">SON · AR EXAMPLES</p>
+      <h1>마커를 비추면<br><em>캐릭터가 춤춰요</em></h1>
+      <p class="lead">브라우저만으로 동작하는 SON의 마커 AR 예제입니다. 마커 시트를 인쇄하거나 다른 화면에 띄워두고 시작하세요.</p>
+      <div class="cards">
+        <a class="card" href="?ex=dancer">
+          <img src="marker/son1.png" alt="">
+          <div><span class="card-no">01</span><strong>댄서</strong><p>마커 1번 위에서 캐릭터가 춤춰요. 버튼과 손가락으로 회전·점프·색상·크기를 바꿔보세요.</p></div>
+        </a>
+        <a class="card" href="?ex=multi">
+          <div class="card-markers"><img src="marker/son1.png" alt=""><img src="marker/son2.png" alt=""><img src="marker/son3.png" alt=""><img src="marker/son4.png" alt=""></div>
+          <div><span class="card-no">02</span><strong>마커별 동작</strong><p>마커마다 다른 동작: ① 댄스 ② 스핀 ③ 점프 ④ 거인. 여러 개를 동시에 비춰도 돼요.</p></div>
+        </a>
+        <a class="card" href="?ex=preview">
+          <div class="card-preview">▶</div>
+          <div><span class="card-no">03</span><strong>미리보기</strong><p>카메라 없이 네 캐릭터를 한 화면에서 바로 확인해요.</p></div>
+        </a>
+      </div>
+      <a class="chip chip--accent sheet-link" href="markers.html" target="_blank" rel="noopener">마커 시트 열기 / 인쇄</a>
+    </main>
 
     <section id="loader" class="loader">
       <div class="loader-logo">SON<em>·AR</em></div>
@@ -50,16 +72,19 @@
     </section>
 
     <section id="hint" class="hint">
-      <img src="marker/son-marker.png" alt="SON 마커">
+      <img id="hint-img" src="marker/son1.png" alt="SON 마커">
       <div>
-        <strong>SON 마커를 비춰주세요</strong>
-        <p>인쇄하거나 다른 화면에 띄운 마커를 카메라에 담으면 캐릭터가 나타나요.</p>
+        <strong id="hint-title">SON 마커를 비춰주세요</strong>
+        <p id="hint-body">인쇄하거나 다른 화면에 띄운 마커를 카메라에 담으면 캐릭터가 나타나요.</p>
         <div class="hint-actions">
-          <a class="chip" href="marker/son-marker.png" target="_blank" rel="noopener">마커 열기</a>
-          <a class="chip" href="?preview">마커 없이 보기</a>
+          <a class="chip" href="markers.html" target="_blank" rel="noopener">마커 시트</a>
+          <a class="chip" href="?ex=preview">마커 없이 보기</a>
         </div>
       </div>
     </section>
+
+    <!-- characters currently on screen; tap to choose which one the dock controls -->
+    <div id="found" class="found" aria-label="감지된 마커"></div>
 
     <section id="camera-error" class="camera-error" role="alert">
       <div class="camera-error-icon">📷</div>
@@ -67,7 +92,7 @@
       <p id="camera-error-body"></p>
       <div class="hint-actions">
         <button id="camera-retry" class="chip chip--accent" type="button">다시 시도</button>
-        <a class="chip" href="?preview">마커 없이 보기</a>
+        <a class="chip" href="?ex=preview">마커 없이 보기</a>
       </div>
     </section>
 
