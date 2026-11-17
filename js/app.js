@@ -257,6 +257,7 @@
         $("loader-text").textContent = "불러오는 중 " + pct + "%";
       }).then((instance) => {
         unityInstance = instance;
+        window.sonUnity = instance;  // handy for debugging / recording from the console
         $("loader").classList.add("done");
         startAR();
       }).catch((e) => {
