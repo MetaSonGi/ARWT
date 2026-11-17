@@ -48,6 +48,8 @@ namespace SON.EditorTools{
                 follower.content = content;
             }
 
+            new GameObject("SonRecorder").AddComponent<SonRecorder>();
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log($"[SON] Scene created at {ScenePath} with {Markers.Length} marker characters");
